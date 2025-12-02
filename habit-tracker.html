@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Habit Tracker Pro</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .scroll-container {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .scroll-container {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+   
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+       
+        const Check = (props) => {
+          const size = props.size || 20;
+          return (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          );
+        };
+       
+        const Plus = () => (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        );
+       
+        const Trash2 = () => (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        );
+       
+        const TrendingUp = () => (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+          </svg>
+        );
+       
+        const Calendar = () => (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        );
+       
+        const Flame = (props) => {
+          const size = props.size || 16;
+          return (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+            </svg>
+          );
+        };
+       
+        const Download = () => (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        );
+       
+        const ChevronLeft = () => (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        );
+       
+        const ChevronRight = () => (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        );
+
+        function HabitTracker() {
+          const [habits, setHabits] = useState([]);
+          const [completions, setCompletions] = useState({});
+          const [newHabitName, setNewHabitName] = useState('');
+          const [view, setView] = useState('tracker');
+          const [selectedMonth, setSelectedMonth] = useState(new Date());
+          const [loading, setLoading] = useState(true);
+          const [showAddForm, setShowAddForm] = useState(false);
+
+          useEffect(() => {
+            loadData();
+          }, []);
+
+          useEffect(() => {
+            if (!loading) {
+              saveData();
+            }
+          }, [habits, completions, loading]);
+
+          const loadData = () => {
+            try {
+              const savedHabits = localStorage.getItem('habits');
+              const savedCompletions = localStorage.getItem('completions');
+             
+              if (savedHabits) {
+                setHabits(JSON.parse(savedHabits));
+              } else {
+                setHabits([
+                  { id: 1, name: 'Wake Up Early', goal: 31, category: 'Morning', streak: 0 },
+                  { id: 2, name: 'Exercise 30 Minutes', goal: 31, category: 'Health', streak: 0 },
+                  { id: 3, name: 'Read 30 Pages', goal: 31, category: 'Learning', streak: 0 },
+                  { id: 4, name: 'Meditate 10 Minutes', goal: 31, category: 'Wellness', streak: 0 },
+                  { id: 5, name: 'Drink 8 Glasses Water', goal: 31, category: 'Health', streak: 0 },
+                ]);
+              }
+             
+              if (savedCompletions) {
+                setCompletions(JSON.parse(savedCompletions));
+              }
+            } catch (error) {
+              console.error('Error loading:', error);
+            }
+            setLoading(false);
+          };
+
+          const saveData = () => {
+            try {
+              localStorage.setItem('habits', JSON.stringify(habits));
+              localStorage.setItem('completions', JSON.stringify(completions));
+            } catch (error) {
+              console.error('Error saving:', error);
+            }
+          };
+
+          const exportData = () => {
+            const data = { habits, completions, exportDate: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'habit-backup-' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+          };
+
+          const getDaysInMonth = (date) => {
+            const useDate = date || selectedMonth;
+            const year = useDate.getFullYear();
+            const month = useDate.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const days = [];
+            for (let i = 1; i <= daysInMonth; i++) {
+              const d = new Date(year, month, i);
+              const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+              days.push({ day: i, dayName, date: d });
+            }
+            return days;
+          };
+
+          const days = getDaysInMonth(selectedMonth);
+          const monthName = selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          const today = new Date();
+
+          const toggleCompletion = (habitId, day) => {
+            const key = habitId + '-' + selectedMonth.getMonth() + '-' + selectedMonth.getFullYear() + '-' + day;
+            setCompletions(prev => {
+              const newCompletions = {...prev};
+              newCompletions[key] = !prev[key];
+              return newCompletions;
+            });
+          };
+
+          const isCompleted = (habitId, day) => {
+            const key = habitId + '-' + selectedMonth.getMonth() + '-' + selectedMonth.getFullYear() + '-' + day;
+            return completions[key] || false;
+          };
+
+          const addHabit = () => {
+            if (newHabitName.trim()) {
+              const newHabit = {
+                id: Date.now(),
+                name: newHabitName,
+                goal: 31,
+                category: 'Custom',
+                streak: 0
+              };
+              setHabits([...habits, newHabit]);
+              setNewHabitName('');
+              setShowAddForm(false);
+            }
+          };
+
+          const deleteHabit = (id) => {
+            if (window.confirm('Delete this habit?')) {
+              setHabits(habits.filter(h => h.id !== id));
+            }
+          };
+
+          const updateStreaks = () => {
+            const updatedHabits = habits.map(habit => {
+              let streak = 0;
+              const currentDate = new Date();
+              for (let i = 0; i < 365; i++) {
+                const checkDate = new Date(currentDate);
+                checkDate.setDate(currentDate.getDate() - i);
+                const day = checkDate.getDate();
+                const month = checkDate.getMonth();
+                const year = checkDate.getFullYear();
+                const key = habit.id + '-' + month + '-' + year + '-' + day;
+                if (completions[key]) {
+                  streak++;
+                } else {
+                  break;
+                }
+              }
+              return { ...habit, streak };
+            });
+            
+            const hasChanges = JSON.stringify(updatedHabits) !== JSON.stringify(habits);
+            if (hasChanges) {
+                setHabits(updatedHabits);
+            }
+          };
+
+          useEffect(() => {
+            if (habits.length > 0) {
+              updateStreaks();
+            }
+          }, [completions]);
+
+          const getCompletionRate = (habitId) => {
+            let completed = 0;
+            days.forEach(d => {
+                if (isCompleted(habitId, d.day)) {
+                  completed++;
+                }
+            });
+            const totalDays = days.length;
+            return totalDays > 0 ? Math.round((completed / totalDays) * 100) : 0;
+          };
+
+          const getTotalCompletions = (habitId) => {
+            let completed = 0;
+            days.forEach(d => {
+              if (isCompleted(habitId, d.day)) {
+                completed++;
+              }
+            });
+            return completed;
+          };
+
+          const getOverallStats = () => {
+            const totalPossible = habits.length * days.length;
+            let totalCompleted = 0;
+            habits.forEach(habit => {
+              days.forEach(d => {
+                if (isCompleted(habit.id, d.day)) {
+                  totalCompleted++;
+                }
+              });
+            });
+            return {
+              completionRate: totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0,
+              totalCompleted: totalCompleted,
+              totalPossible: totalPossible,
+              bestStreak: habits.length > 0 ? Math.max(...habits.map(h => h.streak), 0) : 0
+            };
+          };
+
+          const stats = getOverallStats();
+         
+          const categoryColors = {
+            Morning: 'from-amber-400 to-orange-500',
+            Health: 'from-emerald-400 to-teal-500',
+            Learning: 'from-blue-400 to-indigo-500',
+            Wellness: 'from-purple-400 to-pink-500',
+            Productivity: 'from-cyan-400 to-blue-500',
+            Custom: 'from-slate-400 to-slate-600'
+          };
+
+          const changeMonth = (direction) => {
+            const newDate = new Date(selectedMonth);
+            newDate.setMonth(newDate.getMonth() + direction);
+            setSelectedMonth(newDate);
+          };
+
+          if (loading) {
+            return (
+              <div className="w-full min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+                <div className="text-white text-xl">Loading...</div>
+              </div>
+            );
+          }
+
+          if (view === 'stats') {
+            return (
+              <div className="w-full min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+                <div className="max-w-6xl mx-auto">
+                  <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold text-white">Analytics</h1>
+                    <button
+                      onClick={() => setView('tracker')}
+                      className="px-4 py-2 bg-white text-purple-900 rounded-lg font-semibold active:scale-95 transition"
+                    >
+                      Back
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                      <div className="text-3xl font-bold text-white mb-1">{stats.completionRate}%</div>
+                      <p className="text-white/80 text-sm">Completion</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                      <div className="text-3xl font-bold text-white mb-1">{stats.totalCompleted}</div>
+                      <p className="text-white/80 text-sm">Completed</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Flame size={24} />
+                        <span className="text-3xl font-bold text-white">{stats.bestStreak}</span>
+                      </div>
+                      <p className="text-white/80 text-sm">Best Streak</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                      <div className="text-3xl font-bold text-white mb-1">{habits.length}</div>
+                      <p className="text-white/80 text-sm">Active Habits</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={exportData}
+                    className="w-full mb-6 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-lg font-semibold active:scale-95 transition"
+                  >
+                    <Download /> Export Backup
+                  </button>
+
+                  <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+                    <h2 className="text-xl font-bold text-white mb-4">Habit Performance</h2>
+                    <div className="space-y-3">
+                      {habits.map(habit => {
+                        const rate = getCompletionRate(habit.id);
+                        const completed = getTotalCompletions(habit.id);
+                        const colorClass = categoryColors[habit.category] || categoryColors['Custom'];
+                        return (
+                          <div key={habit.id} className="bg-white/5 rounded-lg p-3">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <span className={'inline-block px-2 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r ' + colorClass + ' mb-1'}>
+                                  {habit.category}
+                                </span>
+                                <div className="text-white font-semibold text-sm">{habit.name}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex items-center gap-1 justify-end mb-1">
+                                  <Flame size={14} />
+                                  <span className="text-orange-400 font-bold text-sm">{habit.streak}</span>
+                                </div>
+                                <div className="text-white/60 text-xs">{completed} done</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-white/10 rounded-full h-2 overflow-hidden">
+                                <div className={'h-full bg-gradient-to-r ' + colorClass + ' transition-all duration-500'} style={{width: rate + '%'}}></div>
+                              </div>
+                              <span className={'font-bold text-sm ' + (rate >= 80 ? 'text-emerald-400' : rate >= 50 ? 'text-yellow-400' : 'text-red-400')}>
+                                {rate}%
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          const displayDays = days;
+
+          return (
+            <div className="w-full min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+              <div className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-lg border-b border-white/10 p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <h1 className="text-2xl font-bold text-white">Habit Tracker</h1>
+                    <p className="text-purple-200 text-xs">Auto-saves ✨</p>
+                  </div>
+                  <button
+                    onClick={() => setView('stats')}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-semibold active:scale-95 transition"
+                  >
+                    <TrendingUp />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => changeMonth(-1)}
+                    className="p-2 bg-white/10 text-white rounded-lg active:bg-white/20 transition"
+                  >
+                    <ChevronLeft />
+                  </button>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-lg rounded-lg border border-white/20">
+                    <Calendar />
+                    <span className="text-white font-semibold text-sm">{monthName}</span>
+                  </div>
+                  <button
+                    onClick={() => changeMonth(1)}
+                    className="p-2 bg-white/10 text-white rounded-lg active:bg-white/20 transition"
+                  >
+                    <ChevronRight />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 pb-24">
+                {showAddForm ? (
+                  <div className="mb-4 p-4 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
+                    <input
+                      type="text"
+                      value={newHabitName}
+                      onChange={(e) => setNewHabitName(e.target.value)}
+                      placeholder="Enter habit name..."
+                      className="w-full px-4 py-3 mb-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-400"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={addHabit}
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg font-semibold active:scale-95 transition"
+                      >
+                        Add Habit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAddForm(false);
+                          setNewHabitName('');
+                        }}
+                        className="px-4 py-3 bg-red-500/20 text-white rounded-lg font-semibold active:scale-95 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowAddForm(true)}
+                    className="w-full mb-4 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold active:scale-95 transition shadow-lg"
+                  >
+                    <Plus /> Add New Habit
+                  </button>
+                )}
+
+                <div className="space-y-3">
+                  {habits.map((habit) => {
+                    const completionRate = getCompletionRate(habit.id);
+                    const colorClass = categoryColors[habit.category] || categoryColors['Custom'];
+                   
+                    return (
+                      <div key={habit.id} className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/20 overflow-hidden">
+                        <div className="p-4 bg-white/5">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <span className={'inline-block px-2 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r ' + colorClass + ' mb-2'}>
+                                {habit.category}
+                              </span>
+                              <h3 className="text-white font-bold text-lg">{habit.name}</h3>
+                            </div>
+                            <button
+                              onClick={() => deleteHabit(habit.id)}
+                              className="p-2 bg-red-500/20 rounded-lg active:bg-red-500/30 transition"
+                            >
+                              <Trash2 />
+                            </button>
+                          </div>
+                         
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-1">
+                              <Flame />
+                              <span className="text-orange-400 font-bold">{habit.streak} days</span>
+                            </div>
+                            <div className={'font-bold ' + (completionRate >= 80 ? 'text-emerald-400' : completionRate >= 50 ? 'text-yellow-400' : 'text-red-400')}>
+                              {completionRate}% complete
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 scroll-container overflow-x-auto">
+                          <div className="text-white/40 text-xs mb-2 text-center">← Scroll to see all days →</div>
+                          <div className="flex gap-2 min-w-max">
+                            {displayDays.map((d) => {
+                              const completed = isCompleted(habit.id, d.day);
+                              return (
+                                <div key={d.day} className="flex flex-col items-center gap-1">
+                                  <div className="text-white/60 text-xs">{d.dayName}</div>
+                                  <div className="text-white font-bold text-sm">{d.day}</div>
+                                  <button
+                                    onClick={() => toggleCompletion(habit.id, d.day)}
+                                    className={'w-12 h-12 rounded-xl flex items-center justify-center transition-all active:scale-90 ' + (
+                                      completed
+                                      ? 'bg-gradient-to-r ' + colorClass + ' shadow-lg'
+                                      : 'bg-white/10 active:bg-white/20'
+                                    )}
+                                  >
+                                    {completed && <Check size={24} />}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {habits.length === 0 && (
+                  <div className="text-center text-white/60 py-12">
+                    <p className="text-lg mb-2">No habits yet</p>
+                    <p className="text-sm">Add your first habit to get started!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<HabitTracker />);
+    </script>
+</body>
+</html>
